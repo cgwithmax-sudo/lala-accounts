@@ -1,6 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { redis } from '../_redis';
+import { getRedis } from '../_redis';
 import type { RoomState } from '../_ttt_types';
+
+const redis = getRedis();
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
