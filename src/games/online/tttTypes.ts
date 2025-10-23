@@ -1,4 +1,3 @@
-// Player & room types
 export type PlayerSymbol = 'X' | 'O';
 export type Cell = PlayerSymbol | '';
 
