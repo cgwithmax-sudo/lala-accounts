@@ -5,23 +5,16 @@ import type { RoomState } from '../_ttt_types';
 const redis = getRedis();
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') {
-    res.setHeader('Cache-Control', 'no-store');
-    return res.status(405).json({ ok: false, error: 'Method not allowed' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Method not allowed' });
 
-  const { roomId, username, name } = (req.body as any) || {};
+  const { roomId, username, name } = req.body || {};
   if (!roomId || !username || !name) {
-    res.setHeader('Cache-Control', 'no-store');
     return res.status(400).json({ ok: false, error: 'Missing roomId, username or name' });
   }
 
   const key = `ttt:room:${roomId}`;
   const raw = await redis.get<string>(key);
-  if (!raw) {
-    res.setHeader('Cache-Control', 'no-store');
-    return res.status(404).json({ ok: false, error: 'Room not found' });
-  }
+  if (!raw) return res.status(404).json({ ok: false, error: 'Room not found' });
 
   const room: RoomState = JSON.parse(raw);
 
@@ -36,7 +29,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     room.players.O = { username, name };
     room.status = 'playing';
   } else {
-    res.setHeader('Cache-Control', 'no-store');
     return res.status(403).json({ ok: false, error: 'Room full' });
   }
 
