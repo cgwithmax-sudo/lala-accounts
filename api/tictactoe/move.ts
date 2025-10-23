@@ -1,6 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { redis } from '../_redis';
+import { getRedis } from '../_redis';
 import type { RoomState, PlayerSymbol } from '../_ttt_types';
+
+const redis = getRedis();
 
 const WINS: number[][] = [
   [0,1,2],[3,4,5],[6,7,8], // rows
@@ -10,7 +12,9 @@ const WINS: number[][] = [
 
 function winner(board: RoomState['board']): PlayerSymbol | null {
   for (const [a,b,c] of WINS) {
-    if (board[a] && board[a] === board[b] && board[b] === board[c]) return board[a] as PlayerSymbol;
+    if (board[a] && board[a] === board[b] && board[b] === board[c]) {
+      return board[a] as PlayerSymbol;
+    }
   }
   return null;
 }
