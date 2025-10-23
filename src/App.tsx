@@ -1,6 +1,5 @@
 // src/App.tsx
 import React, { useEffect, useRef, useState } from 'react';
-import TicTacToe from './games/TicTacToe';
 import MiniTetris from './games/MiniTetris';
 import OnlineTicTacToe from './games/online/OnlineTicTacToe';
 
@@ -46,13 +45,12 @@ export default function App() {
       const json: UserOk | UserErr = await res.json();
       if (json && (json as any).ok) {
         const fresh = (json as UserOk).user;
-        // Only update state if anything changed to avoid re-renders
         if (!authed || authed.role !== fresh.role || authed.name !== fresh.name) {
           setAuthed({ name: fresh.name, username: fresh.username, role: fresh.role || 'Regular' });
         }
       }
     } catch {
-      // silent — we’ll try again on next tick/focus/interval
+      // silent
     } finally {
       syncingRef.current = false;
     }
@@ -101,7 +99,7 @@ export default function App() {
       syncUserFromNotion(authed.username);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [/* on first authed load */]);
+  }, []);
 
   // Periodic sync every 30s while logged in
   useEffect(() => {
@@ -115,11 +113,11 @@ export default function App() {
   useEffect(() => {
     if (!authed?.username) return;
     const onFocus = () => syncUserFromNotion(authed.username);
-    window.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') onFocus();
-    });
+    const onVis = () => { if (document.visibilityState === 'visible') onFocus(); };
+    window.addEventListener('visibilitychange', onVis);
     window.addEventListener('focus', onFocus);
     return () => {
+      window.removeEventListener('visibilitychange', onVis);
       window.removeEventListener('focus', onFocus);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -164,11 +162,18 @@ export default function App() {
               </div>
 
               {/* Role-gated games */}
-              {authed.role === 'Admin' ? (
+              {authed.role && authed.role.toLowerCase() === 'admin' ? (
                 <section>
-                  <h3 style={{ marginTop: 0 }}>XOXO (Admin only)</h3>
-                  <p style={{ marginTop: 0, color: '#6b7280' }}>Classic Tic-Tac-Toe. First to 3 in a row wins.</p>
-                  <TicTacToe />
+                  <h3 style={{ marginTop: 0 }}>Online Tic-Tac-Toe (Admin)</h3>
+                  <p style={{ marginTop: 0, color: '#6b7280' }}>
+                    Create or join a room and play live.
+                  </p>
+                  <OnlineTicTacToe
+                    currentUser={{
+                      username: authed.username,
+                      name: authed.name || authed.username,
+                    }}
+                  />
                 </section>
               ) : (
                 <section>
