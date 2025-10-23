@@ -1,3 +1,4 @@
+// /api/_redis.ts
 import { Redis } from '@upstash/redis';
 
 let client: Redis | null = null;
