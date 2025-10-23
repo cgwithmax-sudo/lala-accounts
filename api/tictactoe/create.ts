@@ -1,16 +1,22 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { redis } from '../_redis';
-import type { RoomState, PlayerSymbol } from '../_ttt_types';
+import type { RoomState } from '../_ttt_types';
 
 function newRoomId() {
   return Math.random().toString(36).slice(2, 8); // short id
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Method not allowed' });
+  if (req.method !== 'POST') {
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(405).json({ ok: false, error: 'Method not allowed' });
+  }
 
-  const { username, name } = req.body || {};
-  if (!username || !name) return res.status(400).json({ ok: false, error: 'Missing username or name' });
+  const { username, name } = (req.body as any) || {};
+  if (!username || !name) {
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(400).json({ ok: false, error: 'Missing username or name' });
+  }
 
   const id = newRoomId();
   const room: RoomState = {
