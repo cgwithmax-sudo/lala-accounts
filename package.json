@@ -18,16 +18,17 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
-  "devDependencies": {
-    "@testing-library/react": "^16.0.0",
-    "@testing-library/user-event": "^14.5.2",
-    "@types/node": "^20.11.30",
-    "concurrently": "^8.2.2",
-    "jsdom": "^24.0.0",
-    "tsx": "^4.19.1",
-    "typescript": "^5.4.5",
-    "vite": "^5.4.0",
-    "vitest": "^2.0.0",
-    "@vercel/node": "^3.0.20"
-  }
+"devDependencies": {
+  "@vitejs/plugin-react": "^4.2.1",
+  "@testing-library/react": "^16.0.0",
+  "@testing-library/user-event": "^14.5.2",
+  "@types/node": "^20.11.30",
+  "concurrently": "^8.2.2",
+  "jsdom": "^24.0.0",
+  "tsx": "^4.19.1",
+  "typescript": "^5.4.5",
+  "vite": "^5.4.0",
+  "vitest": "^2.0.0",
+  "@vercel/node": "^3.0.20"
+}
 }
