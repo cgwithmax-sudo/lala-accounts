@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getRedis } from '../_redis';
+import { getRedis } from '../_redis.js';
 import type { RoomState } from '../_ttt_types';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
