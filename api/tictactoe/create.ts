@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getRedis } from '../_redis';
+import { getRedis } from '../_redis.js';
 import type { RoomState } from '../_ttt_types';
 
 function newRoomId() {
@@ -23,7 +23,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   };
 
   const redis = getRedis();
-  await redis.set(`ttt:room:${id}`, room, { ex: 60 * 60 * 24 }); // store as object (SDK serializes)
+  // Store the plain object; Upstash SDK serializes for us
+  await redis.set(`ttt:room:${id}`, room, { ex: 60 * 60 * 24 });
 
   res.setHeader('Cache-Control', 'no-store');
   return res.json({ ok: true, room });
