@@ -5,8 +5,8 @@ export type Cell = PlayerSymbol | '';
 export type RoomState = {
   id: string;
   createdAt: number;
-  board: Cell[]; // length 9
-  turn: PlayerSymbol;
+  board: Cell[];            // length 9
+  turn: PlayerSymbol;       // 'X' | 'O'
   players: {
     X: { username: string; name: string } | null;
     O: { username: string; name: string } | null;
