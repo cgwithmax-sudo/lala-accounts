@@ -1,6 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { redis } from '../_redis';
+import { getRedis } from '../_redis';
 import type { RoomState } from '../_ttt_types';
+
+const redis = getRedis();
 
 function newRoomId() {
   return Math.random().toString(36).slice(2, 8); // short id
