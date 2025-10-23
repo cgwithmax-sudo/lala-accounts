@@ -1,9 +1,6 @@
-// /api/tictactoe/create.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getRedis } from '../_redis';
-import type { RoomState } from '../_ttt_types';
-
-const redis = getRedis();
+import { getRedis } from '../_redis.js';
+import type { RoomState } from '../_ttt_types.js';
 
 function newRoomId() {
   return Math.random().toString(36).slice(2, 8);
@@ -14,10 +11,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   }
 
-  const { username, name } = (req.body ?? {}) as { username?: string; name?: string };
+  const { username, name } = req.body || {};
   if (!username || !name) {
     return res.status(400).json({ ok: false, error: 'Missing username or name' });
   }
+
+  const redis = getRedis();
 
   const id = newRoomId();
   const room: RoomState = {
@@ -33,8 +32,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   };
 
   const key = `ttt:room:${id}`;
-  await redis.set(key, JSON.stringify(room), { ex: 60 * 60 * 24 }); // 24h TTL
-
+  await redis.set(key, JSON.stringify(room), { ex: 60 * 60 * 24 });
   res.setHeader('Cache-Control', 'no-store');
   return res.json({ ok: true, room });
 }
