@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import TicTacToe from './games/TicTacToe';
 import MiniTetris from './games/MiniTetris';
+import OnlineTicTacToe from './games/online/OnlineTicTacToe';
 
 type LoginOk = { ok: true; user: { name: string; username: string; role: string } };
 type LoginErr = { ok: false; error: string };
