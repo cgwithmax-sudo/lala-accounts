@@ -1,35 +1,97 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { useEffect, useState } from 'react';
 
-function App() {
-  const [count, setCount] = useState(0)
+type LoginOk = { ok: true; user: { name: string; username: string; role: string } };
+type LoginErr = { ok: false; error: string };
+
+const API_BASE = import.meta.env.VITE_API_BASE || (import.meta as any).env?.VITE_API_BASE || '';
+
+export default function App(){
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [authed, setAuthed] = useState<{name:string; username:string; role:string} | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(()=>{
+    const s = sessionStorage.getItem('lala_login_user');
+    if (s) setAuthed(JSON.parse(s));
+  },[]);
+  useEffect(()=>{
+    if (authed) sessionStorage.setItem('lala_login_user', JSON.stringify(authed));
+    else sessionStorage.removeItem('lala_login_user');
+  },[authed]);
+
+  async function handleSubmit(e: React.FormEvent){
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    setAuthed(null);
+    try{
+      const uname = username.trim();
+      const res = await fetch(`${API_BASE}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'Cache-Control': 'no-store' },
+        body: JSON.stringify({ username: uname, password })
+      });
+      const json: LoginOk | LoginErr = await res.json();
+      if (!json.ok) { setError(json.error); setLoading(false); return; }
+      const role = (json as LoginOk).user.role || 'Regular';
+      setAuthed({ ...(json as LoginOk).user, role });
+      setUsername(''); setPassword('');
+    } catch (err:any){
+      console.error(err);
+      setError('Network error. Is the API running?');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleLogout(){ setAuthed(null); }
 
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    <div style={{minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center'}}>
+      <div style={{width:360, padding:20}}>
+        <div style={{background:'white', borderRadius:16, padding:20, boxShadow:'0 6px 20px rgba(2,6,23,0.08)'}}>
+          <h2 style={{margin:0, marginBottom:8}}>Lala Accounts</h2>
+          <p style={{marginTop:0, color:'#6b7280'}}>Sign in with your Notion account from the <strong>User Info</strong> DB.</p>
 
-export default App
+          {authed ? (
+            <div style={{padding:12, borderRadius:12, border:'1px solid #e5e7eb', background:'#f9fafb'}}>
+              <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                <div>
+                  <div style={{fontSize:12, color:'#6b7280'}}>Signed in as</div>
+                  <div style={{fontWeight:700}}>{authed.name || authed.username}</div>
+                </div>
+                <div style={{padding:'6px 10px', borderRadius:999, border:'1px solid #e5e7eb', background:'white'}}>
+                  Role: {authed.role || 'Regular'}
+                </div>
+              </div>
+              <div style={{marginTop:12}}>
+                <button className="btn" onClick={handleLogout}>Log out</button>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit}>
+              <div style={{marginBottom:12}}>
+                <label style={{display:'block', fontSize:13, marginBottom:6}}>Username</label>
+                <input placeholder="e.g. cmsm94" value={username} onChange={e=>setUsername(e.target.value)} style={{width:'100%', padding:10, borderRadius:10, border:'1px solid #e5e7eb'}} />
+              </div>
+              <div style={{marginBottom:12}}>
+                <label style={{display:'block', fontSize:13, marginBottom:6}}>Password</label>
+                <input placeholder="••••••••" type="password" value={password} onChange={e=>setPassword(e.target.value)} style={{width:'100%', padding:10, borderRadius:10, border:'1px solid #e5e7eb'}} />
+              </div>
+              {error && <div style={{color:'#b91c1c', padding:8, borderRadius:8, background:'#fff7f7', marginBottom:10}}>{error}</div>}
+              <div>
+                <button className="btn" type="submit" style={{width:'100%', opacity:loading?0.6:1, pointerEvents:loading?'none':'auto'}}>
+                  {loading ? 'Checking with Notion…' : 'Sign in'}
+                </button>
+              </div>
+            </form>
+          )}
+
+          <div style={{marginTop:12, fontSize:12, color:'#9ca3af'}}>Every login click checks Notion live.</div>
+        </div>
+      </div>
+    </div>
+  );
+}
