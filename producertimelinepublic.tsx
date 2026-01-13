@@ -929,12 +929,12 @@ function LeavesSectionRow({
       {/* LEFT (table area) */}
       <div
         className={cn(
-          "sticky left-0 z-[120] border-r border-[var(--border)] bg-[var(--surface)]"
+          "sticky left-0 z-[120] border-r border-[var(--border)] bg-[var(--bg)] relative"
         )}
         style={{ height: sectionH }}
       >
         <div
-          className={cn("grid h-full")}
+          className={cn("grid h-full bg-[var(--surface)]")}
           style={{ gridTemplateColumns: leftGridTemplate }}
         >
           {/* NO col */}
@@ -990,7 +990,7 @@ function LeavesSectionRow({
 
       {/* SPLITTER column */}
       <div
-        className={cn("sticky z-[110] bg-[var(--surface)] border-r border-[var(--border)]")}
+        className={cn("sticky z-[110] bg-[var(--bg)] border-r border-[var(--border)]")}
         style={{ left: leftW, width: splitW, height: sectionH }}
       />
 
@@ -1071,6 +1071,7 @@ function LeavesSectionRow({
     </div>
   );
 }
+
 
 
 function TaskBar({
