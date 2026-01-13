@@ -978,8 +978,8 @@ function LeavesSectionRow({
   todayIdx?: number;
   zoomPreset: ZoomPreset;
 
-  taskRowH: number;     // slot height per leave bar
-  sectionH: number;     // total height (pushes rows)
+  taskRowH: number; // slot height per leave bar
+  sectionH: number; // total height (pushes rows)
 }) {
   const count = leaves.length;
   const showToggle = count > visibleLimit;
@@ -989,157 +989,138 @@ function LeavesSectionRow({
 
   const labelCount = `${count} leave${count === 1 ? "" : "s"}`;
 
-  const barH = Math.max(18, Math.min(22, taskRowH - 10));
-  const ICON_BTN = hideDetails ? "h-8 w-8" : "h-9 w-9";
+  const barH = Math.max(18, Math.min(20, taskRowH - 10));
+  const ICON_BTN = hideDetails ? "h-6 w-6" : "h-7 w-7";
 
+  // Match Image 1–2: uniform taupe bars + white-ish outline/text
+  const LEAVE_BAR_BG = "#A9A295"; // warm taupe like your screenshot
 
   return (
     <div
-      className={cn("grid border-t border-[var(--border)]")}
+      className={cn("grid border-t border-b border-[var(--border)]")}
       style={{ gridTemplateColumns: `${leftW}px ${splitW}px ${timelineW}px`, height: sectionH }}
     >
       {/* LEFT (table area) */}
       <div
         className={cn(
-          "sticky left-0 z-[120] border-r border-[var(--border)] bg-[var(--bg)] overflow-hidden relative"
+          "sticky left-0 z-[120] border-r border-[var(--border)] bg-[var(--panel)] relative"
         )}
         style={{ height: sectionH }}
       >
-        {/* ✅ Solid, opaque surface so the timeline grid can’t bleed through */}
-        <div aria-hidden className="absolute inset-0 bg-[var(--bg)]" />
-
-        <div
-          className={cn("relative z-10 grid h-full px-3 bg-[var(--bg)]")}
-          style={{ gridTemplateColumns: leftGridTemplate }}
-        >
-          {/* NO col */}
-          <div className="flex items-start justify-center pt-2 text-xs text-[var(--muted)]">
-            —
+        <div className={cn("grid h-full bg-[var(--panel)]")} style={{ gridTemplateColumns: leftGridTemplate }}>
+          {/* NO col (calendar icon like Image 1–2) */}
+          <div className="flex h-full items-center justify-center">
+            <div className="h-9 w-9 rounded-2xl border border-[var(--border)] bg-[var(--bg)] flex items-center justify-center">
+              <CalendarDays className="h-4 w-4 text-[var(--text2)]" />
+            </div>
           </div>
 
-          {/* TASK col */}
-          <div className="flex flex-col justify-start pt-2">
-                        <div className="flex items-center gap-2 min-w-0 w-full">
-  <div className="font-semibold text-[13px] shrink-0">Leaves</div>
+          {/* TASK col (Leaves + count on the SAME line like Group 2 “10 tasks”) */}
+          <div className="flex h-full items-center">
+            <div className="flex items-center gap-3 w-full">
+              <div className="font-semibold text-[13px]">Leaves</div>
+              <div className="text-sm text-[var(--muted)]">{labelCount}</div>
 
-  {/* ✅ Count pill beside title */}
-  <div
-    className={cn(
-      "shrink-0 text-[11px] leading-none px-2 py-[2px] rounded-full",
-      OUTLINE_SUBTLE,
-      "bg-[var(--panel)] text-[var(--muted)]"
-    )}
-  >
-    {labelCount}
-  </div>
-
-  {/* spacer pushes button to the same far-right position as the group trash button */}
-  <div className="flex-1" />
-
-  {colsCollapsed && showToggle && (
-    <button
-      type="button"
-      className={cn(
-        ICON_BTN,
-        "rounded-xl p-0 shrink-0 inline-flex items-center justify-center",
-        BTN_SOFT_ICON
-      )}
-      onClick={onToggleExpanded}
-      title={expanded ? "Collapse leaves" : "Expand leaves"}
-    >
-      {expanded ? (
-        <ChevronUp className="h-4 w-4 text-[var(--text2)]" />
-      ) : (
-        <ChevronDown className="h-4 w-4 text-[var(--text2)]" />
-      )}
-    </button>
-  )}
-</div>
-
+              {/* If columns are collapsed, there's no Actions column, so keep the toggle here */}
+              {colsCollapsed && showToggle && (
+                <button
+                  type="button"
+                  className={cn(
+                    ICON_BTN,
+                    "ml-auto rounded-xl p-0 inline-flex items-center justify-center",
+                    BTN_SOFT_ICON
+                  )}
+                  onClick={onToggleExpanded}
+                  title={expanded ? "Collapse leaves" : "Expand leaves"}
+                >
+                  {expanded ? (
+                    <ChevronUp className="h-4 w-4 text-[var(--text2)]" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-[var(--text2)]" />
+                  )}
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Remaining columns (blank, to keep alignment) */}
           {!colsCollapsed && hideDetails && (
             <>
               {/* Assignee */}
-              <div />
+              <div className="bg-[var(--panel)]" />
               {/* Days left */}
-              <div />
+              <div className="bg-[var(--panel)]" />
               {/* Actions (align with group delete column) */}
-<div className="flex h-full items-center justify-end">
-  {showToggle && (
-    <button
-      type="button"
-      className={cn(
-        ICON_BTN,
-        "rounded-xl p-0 inline-flex items-center justify-center",
-        BTN_SOFT_ICON
-      )}
-      onClick={onToggleExpanded}
-      title={expanded ? "Collapse leaves" : "Expand leaves"}
-    >
-      {expanded ? (
-        <ChevronUp className="h-4 w-4 text-[var(--text2)]" />
-      ) : (
-        <ChevronDown className="h-4 w-4 text-[var(--text2)]" />
-      )}
-    </button>
-  )}
-</div>
-
+              <div className="flex h-full items-center justify-center bg-[var(--panel)]">
+                {showToggle && (
+                  <button
+                    type="button"
+                    className={cn(
+                      ICON_BTN,
+                      "rounded-xl p-0 inline-flex items-center justify-center",
+                      BTN_SOFT_ICON
+                    )}
+                    onClick={onToggleExpanded}
+                    title={expanded ? "Collapse leaves" : "Expand leaves"}
+                  >
+                    {expanded ? (
+                      <ChevronUp className="h-4 w-4 text-[var(--text2)]" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-[var(--text2)]" />
+                    )}
+                  </button>
+                )}
+              </div>
             </>
           )}
 
           {!colsCollapsed && !hideDetails && (
             <>
               {/* Quoted */}
-              <div />
+              <div className="bg-[var(--panel)]" />
               {/* Actual */}
-              <div />
+              <div className="bg-[var(--panel)]" />
               {/* Assignee */}
-              <div />
+              <div className="bg-[var(--panel)]" />
               {/* Days left */}
-              <div />
+              <div className="bg-[var(--panel)]" />
               {/* Status */}
-              <div />
+              <div className="bg-[var(--panel)]" />
               {/* Actions (align with group delete column) */}
-              <div className="flex h-full items-center justify-end">
-  {showToggle && (
-    <button
-      type="button"
-      className={cn(
-        ICON_BTN,
-        "rounded-xl p-0 inline-flex items-center justify-center",
-        BTN_SOFT_ICON
-      )}
-      onClick={onToggleExpanded}
-      title={expanded ? "Collapse leaves" : "Expand leaves"}
-    >
-      {expanded ? (
-        <ChevronUp className="h-4 w-4 text-[var(--text2)]" />
-      ) : (
-        <ChevronDown className="h-4 w-4 text-[var(--text2)]" />
-      )}
-    </button>
-  )}
-</div>
-
+              <div className="flex h-full items-center justify-center bg-[var(--panel)]">
+                {showToggle && (
+                  <button
+                    type="button"
+                    className={cn(
+                      ICON_BTN,
+                      "rounded-xl p-0 inline-flex items-center justify-center",
+                      BTN_SOFT_ICON
+                    )}
+                    onClick={onToggleExpanded}
+                    title={expanded ? "Collapse leaves" : "Expand leaves"}
+                  >
+                    {expanded ? (
+                      <ChevronUp className="h-4 w-4 text-[var(--text2)]" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-[var(--text2)]" />
+                    )}
+                  </button>
+                )}
+              </div>
             </>
           )}
-
         </div>
       </div>
 
       {/* SPLITTER column */}
       <div
-        className={cn("sticky z-[110] bg-[var(--bg)] border-r border-[var(--border)]")}
+        className={cn("sticky z-[110] bg-[var(--panel)] border-r border-[var(--border)]")}
         style={{ left: leftW, width: splitW, height: sectionH }}
       />
 
       {/* RIGHT (timeline area) */}
-      <div className="relative bg-[var(--surface)]" style={{ height: sectionH }}>
-        {/* Leaves row: keep a clean solid background (no grid lines),
-            while still tinting weekends + showing the today line. */}
+      <div className="relative bg-[var(--panel)]" style={{ height: sectionH }}>
+        {/* Match Image 1–2: grey band WITH grid lines + weekend tint + today line */}
         <div className="absolute inset-0 flex pointer-events-none" aria-hidden>
           {days.map((d, i) => {
             const wknd = isWeekend(d);
@@ -1148,8 +1129,8 @@ function LeavesSectionRow({
               <div
                 key={i}
                 className={cn(
-                  "relative h-full",
-                  wknd ? "bg-[var(--weekend)]" : "bg-[var(--surface)]"
+                  "relative h-full border-r border-[var(--border)]",
+                  wknd ? "bg-[var(--weekend)]" : "bg-[var(--panel)]"
                 )}
                 style={{ width: cellW, height: sectionH }}
               >
@@ -1161,7 +1142,7 @@ function LeavesSectionRow({
           })}
         </div>
 
-        {/* bars stacked inside the Leaves area */}
+        {/* taupe leave bars */}
         {packedLeaves.map((p) => {
           const lv = p.lv;
 
@@ -1175,10 +1156,6 @@ function LeavesSectionRow({
           const left = startIdx * cellW + BAR_PAD;
           const width = Math.max(1, span * cellW - BAR_PAD * 2);
 
-          const normalized = normalizeHexColor(lv.barColor ?? null);
-          const inlineStyle: React.CSSProperties = normalized ? { backgroundColor: normalized } : {};
-
-          // ✅ Key change: use packed lane instead of array index
           const slotTop = p.lane * taskRowH;
           const barTop = slotTop + (taskRowH - barH) / 2;
 
@@ -1187,26 +1164,25 @@ function LeavesSectionRow({
               key={lv.id}
               className="absolute"
               style={{ top: barTop, left, width, height: barH }}
-              title={`${lv.assignee}${lv.label ? ` · ${lv.label}` : ""}: ${formatShortDate(start)} → ${formatShortDate(end)}`}
+              title={`${lv.assignee}${lv.label ? ` • ${lv.label}` : ""}: ${formatShortDate(start)} → ${formatShortDate(end)}`}
             >
               <div
                 className={cn(
-                  "h-full w-full rounded-md border shadow-sm px-2 flex items-center",
-                  "text-xs font-medium text-[var(--text)]/80",
-                  normalized ? "border-[var(--border)]" : "bg-[var(--panel)] border-[var(--border)]"
+                  "h-full w-full rounded-md px-2 flex items-center shadow-sm",
+                  "border border-white/40",
+                  "text-xs font-medium text-white/90"
                 )}
-                style={inlineStyle}
+                style={{ backgroundColor: LEAVE_BAR_BG }}
               >
                 <div className="truncate">
                   {lv.assignee}
-                  {lv.label ? ` · ${lv.label}` : ""}
+                  {lv.label ? ` • ${lv.label}` : ""}
                 </div>
               </div>
             </div>
           );
         })}
 
-        {/* If no leaves, keep the area but show nothing (fixed row behavior) */}
         {count === 0 && (
           <div className="absolute inset-0 flex items-center justify-center text-xs text-[var(--muted)]">
             0 leaves
@@ -1216,6 +1192,7 @@ function LeavesSectionRow({
     </div>
   );
 }
+
 
 
 
