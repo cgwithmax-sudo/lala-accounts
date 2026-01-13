@@ -978,7 +978,7 @@ function LeavesSectionRow({
 
   const labelCount = `${count} leave${count === 1 ? "" : "s"}`;
 
-const barH = Math.max(18, Math.min(22, taskRowH - 10));
+  const barH = Math.max(18, Math.min(22, taskRowH - 10));
   const ICON_BTN = hideDetails ? "h-8 w-8" : "h-9 w-9";
 
 
@@ -990,12 +990,15 @@ const barH = Math.max(18, Math.min(22, taskRowH - 10));
       {/* LEFT (table area) */}
       <div
         className={cn(
-          "sticky left-0 z-[120] border-r border-[var(--border)] bg-[var(--bg)] relative"
+          "sticky left-0 z-[120] border-r border-[var(--border)] bg-[var(--bg)] overflow-hidden relative"
         )}
         style={{ height: sectionH }}
       >
+        {/* ✅ Solid, opaque surface so the timeline grid can’t bleed through */}
+        <div aria-hidden className="absolute inset-0 bg-[var(--bg)]" />
+
         <div
-          className={cn("grid h-full bg-[var(--bg)]")}
+          className={cn("relative z-10 grid h-full px-3 bg-[var(--bg)]")}
           style={{ gridTemplateColumns: leftGridTemplate }}
         >
           {/* NO col */}
@@ -1044,7 +1047,7 @@ const barH = Math.max(18, Math.min(22, taskRowH - 10));
               {/* Days left */}
               <div />
               {/* Actions (align with group delete column) */}
-<div className="flex justify-end items-center">
+<div className="flex h-full items-center justify-end">
   {showToggle && (
     <button
       type="button"
@@ -1081,7 +1084,7 @@ const barH = Math.max(18, Math.min(22, taskRowH - 10));
               {/* Status */}
               <div />
               {/* Actions (align with group delete column) */}
-              <div className="flex justify-end items-center">
+              <div className="flex h-full items-center justify-end">
   {showToggle && (
     <button
       type="button"
