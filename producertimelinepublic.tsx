@@ -1011,6 +1011,17 @@ function LeavesSectionRow({
                         <div className="flex items-center gap-2 min-w-0 w-full">
   <div className="font-semibold text-[13px] shrink-0">Leaves</div>
 
+  {/* ✅ Count pill beside title */}
+  <div
+    className={cn(
+      "shrink-0 text-[11px] leading-none px-2 py-[2px] rounded-full",
+      OUTLINE_SUBTLE,
+      "bg-[var(--panel)] text-[var(--muted)]"
+    )}
+  >
+    {labelCount}
+  </div>
+
   {/* spacer pushes button to the same far-right position as the group trash button */}
   <div className="flex-1" />
 
@@ -1034,9 +1045,6 @@ function LeavesSectionRow({
   )}
 </div>
 
-
-
-            <div className="mt-1 text-xs text-[var(--muted)]">{labelCount}</div>
           </div>
 
           {/* Remaining columns (blank, to keep alignment) */}
