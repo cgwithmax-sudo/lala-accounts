@@ -979,7 +979,8 @@ function LeavesSectionRow({
   const labelCount = `${count} leave${count === 1 ? "" : "s"}`;
 
 const barH = Math.max(18, Math.min(22, taskRowH - 10));
-  const ICON_BTN = hideDetails ? "h-6 w-6" : "h-7 w-7";
+  const ICON_BTN = hideDetails ? "h-8 w-8" : "h-9 w-9";
+
 
   return (
     <div
@@ -1004,30 +1005,32 @@ const barH = Math.max(18, Math.min(22, taskRowH - 10));
 
           {/* TASK col */}
           <div className="flex flex-col justify-start pt-2">
-                        <div className="flex items-center gap-2">
-              <div className="font-semibold text-[13px]">Leaves</div>
+                        <div className="flex items-center gap-2 min-w-0 w-full">
+  <div className="font-semibold text-[13px] shrink-0">Leaves</div>
 
-              {/* If columns are collapsed, there's no Actions column,
-                  so keep the toggle here as fallback. */}
-              {colsCollapsed && showToggle && (
-                <button
-                  type="button"
-                  className={cn(
-                    ICON_BTN,
-                    "rounded-lg p-0 inline-flex items-center justify-center",
-                    BTN_SOFT_ICON
-                  )}
-                  onClick={onToggleExpanded}
-                  title={expanded ? "Collapse leaves" : "Expand leaves"}
-                >
-                  {expanded ? (
-                    <ChevronUp className="h-4 w-4 text-[var(--text2)]" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 text-[var(--text2)]" />
-                  )}
-                </button>
-              )}
-            </div>
+  {/* spacer pushes button to the same far-right position as the group trash button */}
+  <div className="flex-1" />
+
+  {colsCollapsed && showToggle && (
+    <button
+      type="button"
+      className={cn(
+        ICON_BTN,
+        "rounded-xl p-0 shrink-0 inline-flex items-center justify-center",
+        BTN_SOFT_ICON
+      )}
+      onClick={onToggleExpanded}
+      title={expanded ? "Collapse leaves" : "Expand leaves"}
+    >
+      {expanded ? (
+        <ChevronUp className="h-4 w-4 text-[var(--text2)]" />
+      ) : (
+        <ChevronDown className="h-4 w-4 text-[var(--text2)]" />
+      )}
+    </button>
+  )}
+</div>
+
 
 
             <div className="mt-1 text-xs text-[var(--muted)]">{labelCount}</div>
@@ -1041,26 +1044,27 @@ const barH = Math.max(18, Math.min(22, taskRowH - 10));
               {/* Days left */}
               <div />
               {/* Actions (align with group delete column) */}
-              <div className="flex h-full items-center justify-center">
-                {showToggle && (
-                  <button
-                    type="button"
-                    className={cn(
-                      ICON_BTN,
-                      "rounded-lg p-0 inline-flex items-center justify-center",
-                      BTN_SOFT_ICON
-                    )}
-                    onClick={onToggleExpanded}
-                    title={expanded ? "Collapse leaves" : "Expand leaves"}
-                  >
-                    {expanded ? (
-                      <ChevronUp className="h-4 w-4 text-[var(--text2)]" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4 text-[var(--text2)]" />
-                    )}
-                  </button>
-                )}
-              </div>
+<div className="flex justify-end items-center">
+  {showToggle && (
+    <button
+      type="button"
+      className={cn(
+        ICON_BTN,
+        "rounded-xl p-0 inline-flex items-center justify-center",
+        BTN_SOFT_ICON
+      )}
+      onClick={onToggleExpanded}
+      title={expanded ? "Collapse leaves" : "Expand leaves"}
+    >
+      {expanded ? (
+        <ChevronUp className="h-4 w-4 text-[var(--text2)]" />
+      ) : (
+        <ChevronDown className="h-4 w-4 text-[var(--text2)]" />
+      )}
+    </button>
+  )}
+</div>
+
             </>
           )}
 
@@ -1077,26 +1081,27 @@ const barH = Math.max(18, Math.min(22, taskRowH - 10));
               {/* Status */}
               <div />
               {/* Actions (align with group delete column) */}
-              <div className="flex h-full items-center justify-center">
-                {showToggle && (
-                  <button
-                    type="button"
-                    className={cn(
-                      ICON_BTN,
-                      "rounded-lg p-0 inline-flex items-center justify-center",
-                      BTN_SOFT_ICON
-                    )}
-                    onClick={onToggleExpanded}
-                    title={expanded ? "Collapse leaves" : "Expand leaves"}
-                  >
-                    {expanded ? (
-                      <ChevronUp className="h-4 w-4 text-[var(--text2)]" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4 text-[var(--text2)]" />
-                    )}
-                  </button>
-                )}
-              </div>
+              <div className="flex justify-end items-center">
+  {showToggle && (
+    <button
+      type="button"
+      className={cn(
+        ICON_BTN,
+        "rounded-xl p-0 inline-flex items-center justify-center",
+        BTN_SOFT_ICON
+      )}
+      onClick={onToggleExpanded}
+      title={expanded ? "Collapse leaves" : "Expand leaves"}
+    >
+      {expanded ? (
+        <ChevronUp className="h-4 w-4 text-[var(--text2)]" />
+      ) : (
+        <ChevronDown className="h-4 w-4 text-[var(--text2)]" />
+      )}
+    </button>
+  )}
+</div>
+
             </>
           )}
 
