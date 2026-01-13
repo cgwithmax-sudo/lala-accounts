@@ -870,6 +870,65 @@ function TimelineGrid({
   );
 }
 
+// ------------------- Leave lane packing -------------------
+// Goal: if leaves don't overlap in dates, they should share the SAME row (lane).
+// Only when they overlap (same day / intersecting range) do we stack into multiple lanes.
+type PackedLeave = {
+  lv: Leave;
+  startIdx: number;
+  endIdx: number;
+  lane: number;
+};
+
+function packLeavesIntoLanes(
+  leaves: Leave[],
+  rangeStart: Date,
+  daysLen: number
+): { packed: PackedLeave[]; laneCount: number } {
+  const lastIdx = Math.max(0, daysLen - 1);
+
+  const spans = leaves
+    .map((lv) => {
+      const s = toDate(lv.start);
+      const e = toDate(lv.end ?? lv.due);
+
+      const startIdx = clamp(dayIndex(rangeStart, s), 0, lastIdx);
+      const endIdx = clamp(dayIndex(rangeStart, e), 0, lastIdx);
+
+      const a = Math.min(startIdx, endIdx);
+      const b = Math.max(startIdx, endIdx);
+
+      return { lv, startIdx: a, endIdx: b };
+    })
+    .sort((a, b) => a.startIdx - b.startIdx || a.endIdx - b.endIdx);
+
+  const laneEnds: number[] = [];
+  const packed: PackedLeave[] = [];
+
+  for (const it of spans) {
+    // Non-overlap rule (inclusive ranges):
+    // Can share a lane only if this starts AFTER the lane's last end.
+    let lane = -1;
+    for (let i = 0; i < laneEnds.length; i++) {
+      if (it.startIdx > laneEnds[i]) {
+        lane = i;
+        break;
+      }
+    }
+
+    if (lane === -1) {
+      lane = laneEnds.length;
+      laneEnds.push(it.endIdx);
+    } else {
+      laneEnds[lane] = Math.max(laneEnds[lane], it.endIdx);
+    }
+
+    packed.push({ ...it, lane });
+  }
+
+  return { packed, laneCount: Math.max(1, laneEnds.length) };
+}
+
 function LeavesSectionRow({
   leaves,
   expanded,
@@ -915,11 +974,12 @@ function LeavesSectionRow({
   const showToggle = count > visibleLimit;
 
   const visible = expanded ? leaves : leaves.slice(0, visibleLimit);
-  const slots = Math.max(1, visible.length);
+  const { packed: packedLeaves } = packLeavesIntoLanes(visible, rangeStart, days.length);
 
   const labelCount = `${count} leave${count === 1 ? "" : "s"}`;
 
-  const barH = Math.max(18, Math.min(22, taskRowH - 10));
+const barH = Math.max(18, Math.min(22, taskRowH - 10));
+  const ICON_BTN = hideDetails ? "h-6 w-6" : "h-7 w-7";
 
   return (
     <div
@@ -934,7 +994,7 @@ function LeavesSectionRow({
         style={{ height: sectionH }}
       >
         <div
-          className={cn("grid h-full bg-[var(--surface)]")}
+          className={cn("grid h-full bg-[var(--bg)]")}
           style={{ gridTemplateColumns: leftGridTemplate }}
         >
           {/* NO col */}
@@ -944,13 +1004,19 @@ function LeavesSectionRow({
 
           {/* TASK col */}
           <div className="flex flex-col justify-start pt-2">
-            <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2">
               <div className="font-semibold text-[13px]">Leaves</div>
 
-              {showToggle && (
+              {/* If columns are collapsed, there's no Actions column,
+                  so keep the toggle here as fallback. */}
+              {colsCollapsed && showToggle && (
                 <button
                   type="button"
-                  className={cn("h-7 w-7 rounded-lg p-0 inline-flex items-center justify-center", BTN_SOFT_ICON)}
+                  className={cn(
+                    ICON_BTN,
+                    "rounded-lg p-0 inline-flex items-center justify-center",
+                    BTN_SOFT_ICON
+                  )}
                   onClick={onToggleExpanded}
                   title={expanded ? "Collapse leaves" : "Expand leaves"}
                 >
@@ -963,28 +1029,77 @@ function LeavesSectionRow({
               )}
             </div>
 
+
             <div className="mt-1 text-xs text-[var(--muted)]">{labelCount}</div>
           </div>
 
           {/* Remaining columns (blank, to keep alignment) */}
           {!colsCollapsed && hideDetails && (
             <>
+              {/* Assignee */}
               <div />
+              {/* Days left */}
               <div />
-              <div />
+              {/* Actions (align with group delete column) */}
+              <div className="flex h-full items-center justify-center">
+                {showToggle && (
+                  <button
+                    type="button"
+                    className={cn(
+                      ICON_BTN,
+                      "rounded-lg p-0 inline-flex items-center justify-center",
+                      BTN_SOFT_ICON
+                    )}
+                    onClick={onToggleExpanded}
+                    title={expanded ? "Collapse leaves" : "Expand leaves"}
+                  >
+                    {expanded ? (
+                      <ChevronUp className="h-4 w-4 text-[var(--text2)]" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-[var(--text2)]" />
+                    )}
+                  </button>
+                )}
+              </div>
             </>
           )}
 
           {!colsCollapsed && !hideDetails && (
             <>
+              {/* Quoted */}
               <div />
+              {/* Actual */}
               <div />
+              {/* Assignee */}
               <div />
+              {/* Days left */}
               <div />
+              {/* Status */}
               <div />
-              <div />
+              {/* Actions (align with group delete column) */}
+              <div className="flex h-full items-center justify-center">
+                {showToggle && (
+                  <button
+                    type="button"
+                    className={cn(
+                      ICON_BTN,
+                      "rounded-lg p-0 inline-flex items-center justify-center",
+                      BTN_SOFT_ICON
+                    )}
+                    onClick={onToggleExpanded}
+                    title={expanded ? "Collapse leaves" : "Expand leaves"}
+                  >
+                    {expanded ? (
+                      <ChevronUp className="h-4 w-4 text-[var(--text2)]" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-[var(--text2)]" />
+                    )}
+                  </button>
+                )}
+              </div>
             </>
           )}
+
         </div>
       </div>
 
@@ -1020,13 +1135,15 @@ function LeavesSectionRow({
         </div>
 
         {/* bars stacked inside the Leaves area */}
-        {visible.map((lv, i) => {
-          const start = toDate(lv.start);
-          const due = toDate(lv.due);
+        {packedLeaves.map((p) => {
+          const lv = p.lv;
 
-          const startIdx = clamp(dayIndex(rangeStart, start), 0, days.length - 1);
-          const dueIdx = clamp(dayIndex(rangeStart, due), 0, days.length - 1);
-          const span = Math.max(1, dueIdx - startIdx + 1);
+          const start = toDate(lv.start);
+          const end = toDate(lv.end ?? lv.due);
+
+          const startIdx = p.startIdx;
+          const endIdx = p.endIdx;
+          const span = Math.max(1, endIdx - startIdx + 1);
 
           const left = startIdx * cellW + BAR_PAD;
           const width = Math.max(1, span * cellW - BAR_PAD * 2);
@@ -1034,7 +1151,8 @@ function LeavesSectionRow({
           const normalized = normalizeHexColor(lv.barColor ?? null);
           const inlineStyle: React.CSSProperties = normalized ? { backgroundColor: normalized } : {};
 
-          const slotTop = i * taskRowH;
+          // ✅ Key change: use packed lane instead of array index
+          const slotTop = p.lane * taskRowH;
           const barTop = slotTop + (taskRowH - barH) / 2;
 
           return (
@@ -1042,7 +1160,7 @@ function LeavesSectionRow({
               key={lv.id}
               className="absolute"
               style={{ top: barTop, left, width, height: barH }}
-              title={`${lv.assignee}${lv.label ? ` · ${lv.label}` : ""}: ${formatShortDate(start)} → ${formatShortDate(due)}`}
+              title={`${lv.assignee}${lv.label ? ` · ${lv.label}` : ""}: ${formatShortDate(start)} → ${formatShortDate(end)}`}
             >
               <div
                 className={cn(
@@ -2938,11 +3056,17 @@ const TASK_ROW_H = hideDetails ? 32 : 34;
     [leavesInRange, leavesExpanded]
   );
 
-  // ✅ Height grows when expanded → pushes all groups/tasks down
+  // ✅ Pack leaves into the minimum number of lanes.
+  // If leaves don't overlap in days, they will share 1 lane (1 row height).
+  const visibleLeavesLaneCount = useMemo(() => {
+    if (!days.length) return 1;
+    return packLeavesIntoLanes(visibleLeaves, timelineStart, days.length).laneCount;
+  }, [visibleLeaves, timelineStart, days.length]);
+
+  // ✅ Height grows only when lanes are needed (overlapping leaves)
   const LEAVES_ROW_H = useMemo(() => {
-    const slots = Math.max(1, visibleLeaves.length);
-    return slots * TASK_ROW_H;
-  }, [visibleLeaves.length, TASK_ROW_H]);
+    return Math.max(1, visibleLeavesLaneCount) * TASK_ROW_H;
+  }, [visibleLeavesLaneCount, TASK_ROW_H]);
 
 
 // ✅ Taller controls = less vertical whitespace inside the row
