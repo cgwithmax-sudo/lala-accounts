@@ -135,24 +135,35 @@ const BTN_PRIMARY = `border-[0.5px] border-emerald-400/30 bg-emerald-500/15 text
 
 // ------------------- Task Options modal theme-safe styles (works with White/Black theme) -------------------
 // Uses the app's theme vars: --bg, --surface, --panel, --hover, --active, --border, --text, --text2, --muted, --muted2
-const MODAL_SHELL = "bg-[var(--bg)] text-[var(--text)] border border-[var(--border)]";
+
+// Outer modal: subtle grey border + WHITE outline ring (matches your Settings modal feel)
+const MODAL_SHELL =
+  "bg-[var(--bg)] text-[var(--text)] border-[0.5px] border-[var(--border)] ring-1 ring-white/85 dark:ring-white/20 shadow-2xl";
+
 const MODAL_LEFT_BG = "bg-[var(--bg)]";
 const MODAL_RIGHT_BG = "bg-[var(--bg)]";
-const MODAL_BORDER = "border border-[var(--border)]";
+
+// Inner panels / cards: subtle grey hairline (not thick)
+const MODAL_BORDER = "border-[0.5px] border-[var(--border)]";
+
 const MODAL_MUTED = "text-[var(--muted)]";
 const MODAL_TEXT2 = "text-[var(--text2)]";
 
 const MODAL_INPUT =
-  "border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] placeholder:text-[var(--muted2)] focus-visible:ring-2 focus-visible:ring-emerald-500/20";
+  "border-[0.5px] border-[var(--border)] bg-[var(--surface)] text-[var(--text)] placeholder:text-[var(--muted2)] focus-visible:ring-2 focus-visible:ring-emerald-500/20";
+
 const MODAL_SELECT =
-  "border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] focus-visible:ring-2 focus-visible:ring-emerald-500/20";
+  "border-[0.5px] border-[var(--border)] bg-[var(--surface)] text-[var(--text)] focus-visible:ring-2 focus-visible:ring-emerald-500/20";
 
 const MODAL_BTN =
-  "border border-[var(--border)] bg-[var(--panel)] text-[var(--text2)] hover:bg-[var(--hover)] hover:text-[var(--text)]";
+  "border-[0.5px] border-[var(--border)] bg-[var(--panel)] text-[var(--text2)] hover:bg-[var(--hover)] hover:text-[var(--text)]";
+
 const MODAL_BTN_PRIMARY =
-  "border border-emerald-500/30 bg-emerald-500/12 text-emerald-400 hover:bg-emerald-500/18";
+  "border-[0.5px] border-emerald-500/30 bg-emerald-500/12 text-emerald-400 hover:bg-emerald-500/18";
+
 const MODAL_BTN_DANGER =
-  "border border-rose-500/30 bg-rose-500/12 text-rose-400 hover:bg-rose-500/18";
+  "border-[0.5px] border-rose-500/30 bg-rose-500/12 text-rose-400 hover:bg-rose-500/18";
+
 
 function isValidHexColor(v: string | null | undefined) {
   if (typeof v !== "string") return false;
