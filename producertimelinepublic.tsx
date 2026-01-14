@@ -300,7 +300,7 @@ const PUBLIC_SHARE_SCHEMA = "public_v1" as const;
 type PublicSharePayload = {
   schema: typeof PUBLIC_SHARE_SCHEMA;
   label: string;
-  createdAt: number;
+  publishedAt: number;
   autoRows: boolean;
   groups: Group[];
   tasks: Task[];
@@ -336,7 +336,7 @@ function decodePublicSharePayload(raw: string): PublicSharePayload | null {
   try {
     const obj = JSON.parse(json) as Partial<PublicSharePayload>;
     if (obj.schema !== PUBLIC_SHARE_SCHEMA) return null;
-    if (!obj.label || typeof obj.createdAt !== "number") return null;
+    if (!obj.label || typeof obj.publishedAt !== "number") return null;
     if (!Array.isArray(obj.groups) || !Array.isArray(obj.tasks)) return null;
     if (typeof obj.autoRows !== "boolean") return null;
     return obj as PublicSharePayload;
@@ -681,25 +681,39 @@ function safeLoadDraft(): { groups: Group[]; tasks: Task[] } {
 
 // AFTER
 function safeLoadVersions(): TimelineVersion[] {
-  if (typeof window === "undefined") return [];
   try {
-    const raw = window.localStorage.getItem(VERSIONS_KEY);
+    const raw = localStorage.getItem(STORAGE_VERSIONS_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
+
     return parsed
-      .map((v: any) => ({
-        id: String(v.id ?? ""),
-        label: String(v.label ?? ""),
-        createdAt: Number(v.createdAt ?? 0),
-        groups: Array.isArray(v.groups) ? (v.groups as Group[]) : [],
-        tasks: Array.isArray(v.tasks) ? normalizeDependsOnArray(v.tasks) : [],
-      }))
-      .filter((v: TimelineVersion) => Boolean(v.id) && Boolean(v.label) && Boolean(v.createdAt));
+      .filter((v) => v && typeof v.id === "string" && typeof v.label === "string")
+      .map((v): TimelineVersion => {
+        const publishedAt =
+          typeof v.publishedAt === "number"
+            ? v.publishedAt
+            : typeof v.publishedAt === "number"
+              ? v.publishedAt
+              : Date.now();
+
+        const autoRows = typeof v.autoRows === "boolean" ? v.autoRows : true;
+
+        return {
+          id: v.id,
+          label: v.label,
+          publishedAt,
+          autoRows,
+          groups: Array.isArray(v.groups) ? v.groups : [],
+          tasks: Array.isArray(v.tasks) ? v.tasks : [],
+        };
+      })
+      .filter((v) => typeof v.publishedAt === "number");
   } catch {
     return [];
   }
 }
+
 function saveVersionsToStorage(list: TimelineVersion[]) {
   try {
     window.localStorage.setItem(VERSIONS_KEY, JSON.stringify(list));
@@ -3509,21 +3523,26 @@ const chained = newTasks.map((t, i) => (i === 0 ? { ...t, dependsOn: null } : { 
   }
 
   function publishVersion() {
-    const createdAt = Date.now();
-    const label = nextVersionLabel(versions);
-    const snap: TimelineVersion = {
-      id: newId("v"),
-      label,
-      createdAt,
-      groups: groups.map((g) => ({ ...g })),
-      tasks: tasks.map((t) => ({ ...t })),
-    };
-    const next = [snap, ...versions];
-    setVersions(next);
-    saveVersionsToStorage(next);
-    setActiveVersionId(snap.id);
-    setVersionsOpen(true);
-  }
+  const label = (nextPublishLabel || "").trim() || `Version ${versions.length + 1}`;
+
+  const newV: TimelineVersion = {
+    id: `${Date.now()}_${Math.random().toString(16).slice(2)}`,
+    label,
+    publishedAt: Date.now(),
+    autoRows: !!autoRows,
+    groups: structuredClone(groups),
+    tasks: structuredClone(tasks),
+  };
+
+  const merged = [newV, ...versions].slice(0, 30);
+  setVersions(merged);
+  safeSaveVersions(merged);
+  setActiveVersionId(newV.id);
+
+  toast("Published", "This version is saved in localStorage and can be loaded anytime.");
+  setPublishOpen(false);
+}
+
 
   function loadVersionToEditor(v: TimelineVersion) {
     setGroups(v.groups.map((g) => ({ ...g })));
@@ -5488,7 +5507,7 @@ const isSelectedTask = r.kind === "task" && selectedTaskSet.has(r.task.id);
                             {v.tasks?.length ?? 0} tasks
                           </Badge>
                         </div>
-                        <div className="text-xs text-[var(--muted)]">{formatVersionTimestamp(v.createdAt)}</div>
+                        <div className="text-xs text-[var(--muted)]">{formatVersionTimestamp(v.publishedAt)}</div>
                       </button>
                     );
                   })
@@ -5501,7 +5520,7 @@ const isSelectedTask = r.kind === "task" && selectedTaskSet.has(r.task.id);
                 <div className="min-w-0">
                   <div className="text-sm font-semibold truncate">{activeVersion ? `${activeVersion.label} preview` : "Select a version"}</div>
                   <div className="text-xs text-[var(--muted)]">
-                    {activeVersion ? formatVersionTimestamp(activeVersion.createdAt) : "Pick a version on the left."}
+                    {activeVersion ? formatVersionTimestamp(activeVersion.publishedAt) : "Pick a version on the left."}
                   </div>
                 </div>
 
@@ -5515,37 +5534,20 @@ const isSelectedTask = r.kind === "task" && selectedTaskSet.has(r.task.id);
     Load to editor
   </Button>
 
-  <Button
-    variant="outline"
-    className={cn("h-8 rounded-full", BTN_SOFT)}
-    disabled={!activeVersion}
-    onClick={async () => {
-      if (!activeVersion) return;
+ <Button
+  variant="secondary"
+  onClick={async () => {
+    if (!activeVersion) return;
 
-      const payload = {
-        v: 1,
-        publishedAt: Date.now(),
-        label: activeVersion.label,
-        createdAt: activeVersion.createdAt,
-        groups: activeVersion.groups,
-        tasks: activeVersion.tasks,
-      };
+    const url = buildPublicShareUrl(activeVersion);
 
-      const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))))
-        .replace(/\+/g, "-")
-        .replace(/\//g, "_")
-        .replace(/=+$/, "");
+    await navigator.clipboard.writeText(url);
+    toast("Copied", "Public read-only link copied to clipboard.");
+  }}
+>
+  Copy Public Link
+</Button>
 
-      const url =
-        `${window.location.origin}${window.location.pathname}` +
-        `?public=${encodeURIComponent(encoded)}`;
-
-      await navigator.clipboard.writeText(url);
-      alert("Public link copied!");
-    }}
-  >
-    Public link
-  </Button>
 
   <Button
     className={cn("h-8 rounded-full", BTN_SOFT, BTN_TINT_EMERALD)}
