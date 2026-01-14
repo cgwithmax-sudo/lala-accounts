@@ -5392,18 +5392,55 @@ const isSelectedTask = r.kind === "task" && selectedTaskSet.has(r.task.id);
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    className={cn("h-8 rounded-full", BTN_SOFT)}
-                    disabled={!activeVersion}
-                    onClick={() => activeVersion && loadVersionToEditor(activeVersion)}
-                  >
-                    Load to editor
-                  </Button>
-                  <Button className={cn("h-8 rounded-full", BTN_SOFT, BTN_TINT_EMERALD)} onClick={publishVersion}>
-                    Publish {nextPublish}
-                  </Button>
-                </div>
+  <Button
+    variant="outline"
+    className={cn("h-8 rounded-full", BTN_SOFT)}
+    disabled={!activeVersion}
+    onClick={() => activeVersion && loadVersionToEditor(activeVersion)}
+  >
+    Load to editor
+  </Button>
+
+  <Button
+    variant="outline"
+    className={cn("h-8 rounded-full", BTN_SOFT)}
+    disabled={!activeVersion}
+    onClick={async () => {
+      if (!activeVersion) return;
+
+      const payload = {
+        v: 1,
+        publishedAt: Date.now(),
+        label: activeVersion.label,
+        createdAt: activeVersion.createdAt,
+        groups: activeVersion.groups,
+        tasks: activeVersion.tasks,
+      };
+
+      const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))))
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=+$/, "");
+
+      const url =
+        `${window.location.origin}${window.location.pathname}` +
+        `?public=${encodeURIComponent(encoded)}`;
+
+      await navigator.clipboard.writeText(url);
+      alert("Public link copied!");
+    }}
+  >
+    Public link
+  </Button>
+
+  <Button
+    className={cn("h-8 rounded-full", BTN_SOFT, BTN_TINT_EMERALD)}
+    onClick={publishVersion}
+  >
+    Publish {nextPublish}
+  </Button>
+</div>
+
               </div>
 
               <div className="p-3">
