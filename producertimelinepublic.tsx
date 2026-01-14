@@ -230,11 +230,65 @@ type Leave = {
 
 type TimelineVersion = {
   id: string;
-  label: string; // V1, V2, ...
-  createdAt: number;
+  label: string;
+  publishedAt: number;
   groups: Group[];
   tasks: Task[];
+  autoRows: boolean;
 };
+
+// ✅ Backward/compat alias (fixes "Cannot find name 'PublishedVersion'")
+type PublishedVersion = TimelineVersion;
+
+type PublicTokenPayload = {
+  v: 1;
+  version: TimelineVersion;
+};
+
+function base64UrlEncodeUtf8(input: string) {
+  const b64 = btoa(unescape(encodeURIComponent(input)));
+  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function base64UrlDecodeUtf8(input: string) {
+  const b64 = input.replace(/-/g, "+").replace(/_/g, "/");
+  const pad = b64.length % 4 === 0 ? "" : "=".repeat(4 - (b64.length % 4));
+  const bin = atob(b64 + pad);
+  return decodeURIComponent(escape(bin));
+}
+
+function encodePublicToken(version: TimelineVersion) {
+  const payload: PublicTokenPayload = { v: 1, version };
+  return base64UrlEncodeUtf8(JSON.stringify(payload));
+}
+
+function decodePublicToken(token: string): TimelineVersion | null {
+  try {
+    const normalized = String(token || "").trim().replace(/ /g, "+");
+    if (!normalized) return null;
+
+    const json = base64UrlDecodeUtf8(normalized);
+    const parsed = JSON.parse(json) as PublicTokenPayload;
+
+    if (!parsed || parsed.v !== 1 || !parsed.version) return null;
+
+    const v = parsed.version as TimelineVersion;
+    if (!Array.isArray(v.groups) || !Array.isArray(v.tasks)) return null;
+
+    return v;
+  } catch {
+    return null;
+  }
+}
+
+function buildPublicShareUrl(version: TimelineVersion) {
+  if (typeof window === "undefined") return "";
+  const token = encodePublicToken(version);
+  const origin = window.location.origin;
+  const path = window.location.pathname || "/";
+  return `${origin}${path}?public=${encodeURIComponent(token)}`;
+}
+
 
 type Snapshot = { groups: Group[]; tasks: Task[] };
 
@@ -5519,88 +5573,44 @@ const isSelectedTask = r.kind === "task" && selectedTaskSet.has(r.task.id);
 }
 
 export function PublicTimelineViewer({ publicToken }: { publicToken: string }) {
-  const [version, setVersion] = useState<PublishedVersion | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const token = String(publicToken ?? "").trim();
-
-    if (!token) {
-      setError("Missing public token.");
-      setVersion(null);
-      return;
-    }
-
-    // ✅ New format (works when you share the long token link)
-    const decoded = decodePublicToken(token);
-    if (decoded?.version) {
-      setError(null);
-      setVersion(decoded.version);
-      return;
-    }
-
-    // 🧯 Legacy fallback (only works on the same machine, if versions exist in localStorage)
-    const local = safeLoadVersions().find((v) => v.id === token) ?? null;
-    if (local) {
-      setError(null);
-      setVersion(local);
-      return;
-    }
-
-    setVersion(null);
-    setError("This public link is invalid or expired.");
-  }, [publicToken]);
-
-  // Standalone theme vars (so it works without AppShell)
   const vars = useMemo(() => {
     return {
-      "--bg": "#f7f7fb",
-      "--surface": "rgba(0,0,0,0.045)",
-      "--panel": "rgba(0,0,0,0.065)",
-      "--hover": "rgba(0,0,0,0.085)",
-      "--active": "rgba(0,0,0,0.11)",
-      "--border": "rgba(0,0,0,0.16)",
-      "--text": "#0b0b0f",
-      "--text2": "rgba(11,11,15,0.78)",
-      "--muted": "rgba(11,11,15,0.62)",
-      "--muted2": "rgba(11,11,15,0.55)",
+      "--bg": "#0b0b0f",
+      "--surface": "rgba(255,255,255,0.05)",
+      "--panel": "rgba(255,255,255,0.05)",
+      "--hover": "rgba(255,255,255,0.06)",
+      "--active": "rgba(255,255,255,0.10)",
+      "--border": "rgba(255,255,255,0.10)",
+      "--text": "#ffffff",
+      "--text2": "rgba(255,255,255,0.86)",
+      "--muted": "rgba(255,255,255,0.70)",
+      "--muted2": "rgba(255,255,255,0.55)",
     } as React.CSSProperties;
   }, []);
 
-  useEffect(() => {
-    const root = document.documentElement;
-    Object.entries(vars).forEach(([k, v]) => {
-      if (k.startsWith("--") && typeof v === "string") root.style.setProperty(k, v);
-    });
-    root.style.setProperty("color-scheme", "light");
-  }, [vars]);
+  const version = useMemo(() => decodePublicToken(publicToken), [publicToken]);
+
+  if (!version) {
+    return (
+      <div style={vars} className="min-h-screen grid place-items-center bg-[var(--bg)] text-[var(--text)] p-6">
+        <div className="text-sm text-[var(--muted)]">Invalid or missing public snapshot.</div>
+      </div>
+    );
+  }
 
   return (
     <div style={vars} className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
-      <div className="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--bg)]/90 backdrop-blur">
-        <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-3 px-4 py-3">
-          <div className="min-w-0">
-            <div className="text-sm font-semibold truncate">Public Timeline (read-only)</div>
-            <div className="text-xs text-[var(--muted)] truncate">
-              {version ? `${version.label} • ${formatVersionTimestamp(version.createdAt)}` : ""}
-            </div>
+      <div className="sticky top-0 z-20 border-b border-[var(--border)] bg-[var(--bg)]/80 backdrop-blur">
+        <div className="mx-auto max-w-[1200px] px-4 py-3">
+          <div className="text-sm font-semibold">{version.label}</div>
+          <div className="text-xs text-[var(--muted)]">
+            Published {new Date(version.publishedAt).toLocaleString()}
           </div>
-          <div className="text-xs text-[var(--muted2)]">No login required</div>
         </div>
       </div>
 
-      <div className="mx-auto max-w-[1400px] p-4">
-        {error ? (
-          <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm text-[var(--text2)]">
-            {error}
-          </div>
-        ) : version ? (
-          <SnapshotPreview groups={version.groups} tasks={version.tasks} autoRows={true} />
-        ) : (
-          <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm text-[var(--text2)]">
-            Loading…
-          </div>
-        )}
+      <div className="mx-auto max-w-[1200px] px-4 py-4">
+        <SnapshotPreview groups={version.groups} tasks={version.tasks} autoRows={version.autoRows} />
       </div>
     </div>
   );
