@@ -238,7 +238,67 @@ type TimelineVersion = {
 
 type Snapshot = { groups: Group[]; tasks: Task[] };
 
+// --- Public share (no-login) ---
+// We keep this purely client-side by embedding a snapshot payload in the URL.
+// Each published version produces a unique `?public=` link.
+const PUBLIC_SHARE_SCHEMA = "public_v1" as const;
+
+type PublicSharePayload = {
+  schema: typeof PUBLIC_SHARE_SCHEMA;
+  label: string;
+  createdAt: number;
+  autoRows: boolean;
+  groups: Group[];
+  tasks: Task[];
+};
+
+function base64UrlEncodeUnicode(str: string): string {
+  const bytes = new TextEncoder().encode(str);
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function base64UrlDecodeUnicode(b64url: string): string | null {
+  try {
+    const b64 = b64url.replace(/-/g, "+").replace(/_/g, "/");
+    const padLen = (4 - (b64.length % 4)) % 4;
+    const padded = b64 + "=".repeat(padLen);
+    const bin = atob(padded);
+    const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  } catch {
+    return null;
+  }
+}
+
+function encodePublicSharePayload(payload: PublicSharePayload): string {
+  return base64UrlEncodeUnicode(JSON.stringify(payload));
+}
+
+function decodePublicSharePayload(raw: string): PublicSharePayload | null {
+  const json = base64UrlDecodeUnicode(raw);
+  if (!json) return null;
+  try {
+    const obj = JSON.parse(json) as Partial<PublicSharePayload>;
+    if (obj.schema !== PUBLIC_SHARE_SCHEMA) return null;
+    if (!obj.label || typeof obj.createdAt !== "number") return null;
+    if (!Array.isArray(obj.groups) || !Array.isArray(obj.tasks)) return null;
+    if (typeof obj.autoRows !== "boolean") return null;
+    return obj as PublicSharePayload;
+  } catch {
+    return null;
+  }
+}
+
+function buildPublicShareLink(payload: PublicSharePayload): string {
+  if (typeof window === "undefined") return "";
+  const base = `${window.location.origin}${window.location.pathname}`;
+  return `${base}?public=${encodePublicSharePayload(payload)}`;
+}
+
 const BAR_PAD = 0;
+
 
 // Dependency geometry
 const DOT_RADIUS = 6;
@@ -5454,6 +5514,31 @@ const isSelectedTask = r.kind === "task" && selectedTaskSet.has(r.task.id);
           </div>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+export function PublicTimelineViewer() {
+  const [payload, setPayload] = React.useState<PublicSharePayload | null>(null);
+
+  React.useEffect(() => {
+    const raw = new URLSearchParams(window.location.search).get("public");
+    if (!raw) return;
+    const decoded = decodePublicSharePayload(raw);
+    setPayload(decoded);
+  }, []);
+
+  if (!payload) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-sm text-[var(--muted)]">
+        Invalid or missing public snapshot.
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen p-6 bg-[var(--bg)] text-[var(--fg)]">
+      <SnapshotPreview groups={payload.groups} tasks={payload.tasks} autoRows={payload.autoRows} />
     </div>
   );
 }
