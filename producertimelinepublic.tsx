@@ -5518,27 +5518,90 @@ const isSelectedTask = r.kind === "task" && selectedTaskSet.has(r.task.id);
   );
 }
 
-export function PublicTimelineViewer() {
-  const [payload, setPayload] = React.useState<PublicSharePayload | null>(null);
+export function PublicTimelineViewer({ publicToken }: { publicToken: string }) {
+  const [version, setVersion] = useState<PublishedVersion | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  React.useEffect(() => {
-    const raw = new URLSearchParams(window.location.search).get("public");
-    if (!raw) return;
-    const decoded = decodePublicSharePayload(raw);
-    setPayload(decoded);
+  useEffect(() => {
+    const token = String(publicToken ?? "").trim();
+
+    if (!token) {
+      setError("Missing public token.");
+      setVersion(null);
+      return;
+    }
+
+    // ✅ New format (works when you share the long token link)
+    const decoded = decodePublicToken(token);
+    if (decoded?.version) {
+      setError(null);
+      setVersion(decoded.version);
+      return;
+    }
+
+    // 🧯 Legacy fallback (only works on the same machine, if versions exist in localStorage)
+    const local = safeLoadVersions().find((v) => v.id === token) ?? null;
+    if (local) {
+      setError(null);
+      setVersion(local);
+      return;
+    }
+
+    setVersion(null);
+    setError("This public link is invalid or expired.");
+  }, [publicToken]);
+
+  // Standalone theme vars (so it works without AppShell)
+  const vars = useMemo(() => {
+    return {
+      "--bg": "#f7f7fb",
+      "--surface": "rgba(0,0,0,0.045)",
+      "--panel": "rgba(0,0,0,0.065)",
+      "--hover": "rgba(0,0,0,0.085)",
+      "--active": "rgba(0,0,0,0.11)",
+      "--border": "rgba(0,0,0,0.16)",
+      "--text": "#0b0b0f",
+      "--text2": "rgba(11,11,15,0.78)",
+      "--muted": "rgba(11,11,15,0.62)",
+      "--muted2": "rgba(11,11,15,0.55)",
+    } as React.CSSProperties;
   }, []);
 
-  if (!payload) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-sm text-[var(--muted)]">
-        Invalid or missing public snapshot.
-      </div>
-    );
-  }
+  useEffect(() => {
+    const root = document.documentElement;
+    Object.entries(vars).forEach(([k, v]) => {
+      if (k.startsWith("--") && typeof v === "string") root.style.setProperty(k, v);
+    });
+    root.style.setProperty("color-scheme", "light");
+  }, [vars]);
 
   return (
-    <div className="min-h-screen p-6 bg-[var(--bg)] text-[var(--fg)]">
-      <SnapshotPreview groups={payload.groups} tasks={payload.tasks} autoRows={payload.autoRows} />
+    <div style={vars} className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
+      <div className="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--bg)]/90 backdrop-blur">
+        <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-3 px-4 py-3">
+          <div className="min-w-0">
+            <div className="text-sm font-semibold truncate">Public Timeline (read-only)</div>
+            <div className="text-xs text-[var(--muted)] truncate">
+              {version ? `${version.label} • ${formatVersionTimestamp(version.createdAt)}` : ""}
+            </div>
+          </div>
+          <div className="text-xs text-[var(--muted2)]">No login required</div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-[1400px] p-4">
+        {error ? (
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm text-[var(--text2)]">
+            {error}
+          </div>
+        ) : version ? (
+          <SnapshotPreview groups={version.groups} tasks={version.tasks} autoRows={true} />
+        ) : (
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm text-[var(--text2)]">
+            Loading…
+          </div>
+        )}
+      </div>
     </div>
   );
 }
