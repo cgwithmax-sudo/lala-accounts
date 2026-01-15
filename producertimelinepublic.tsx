@@ -4067,21 +4067,7 @@ const groupToOptions = taskToOptions ? groups.find((g) => g.id === taskToOptions
             <div ref={scrollRef} className="flex-1 w-full min-w-0 overflow-auto overscroll-contain">
               <div className="min-w-full relative" style={{ minWidth: leftW + SPLIT_W + timelineW }}>
   {/* ✅ Today line for the BODY (does NOT go over left panel) */}
-  {showTodayLine && (
-    <div
-      className="absolute pointer-events-none"
-      style={{
-        // start under the sticky header area (header has its own Today line)
-        top: stickyHeaderH,
-        left: timelineLeftX + todayX - 1, // ✅ key: offset by left panel width
-        width: 2,
-        height: rowLayout.totalH,
-        background: "#EF4444",
-        zIndex: 180, // above bars if needed, but still doesn't touch left because of the left offset
-      }}
-      aria-hidden
-    />
-  )}
+  
 
   <div
     ref={headerRowRef}
