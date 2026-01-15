@@ -1140,9 +1140,7 @@ function LeavesSectionRow({
   // Solid panel background WITHOUT weekend tinting (single color row)
   const PANEL_BG = "bg-[var(--panel)]";
 
-  // Today line position (same boundary style as the rest of the grid)
-  const todayLineX =
-    typeof todayIdx === "number" ? (todayIdx + 1) * cellW - 1 : null;
+
 
   return (
     <div
@@ -1308,14 +1306,7 @@ function LeavesSectionRow({
         <div className="absolute inset-0 bg-[var(--bg)]" aria-hidden />
         <div className={cn("absolute inset-0", PANEL_BG)} aria-hidden />
 
-        {/* Today line */}
-        {todayLineX !== null && (
-          <div
-            className="absolute top-0 bottom-0 w-[2px] bg-red-500/80 pointer-events-none"
-            style={{ left: todayLineX }}
-            aria-hidden
-          />
-        )}
+       
 
         {/* bars stacked inside the Leaves area */}
         {packedLeaves.map((p) => {
@@ -4375,18 +4366,18 @@ const groupToOptions = taskToOptions ? groups.find((g) => g.id === taskToOptions
                 <div className="relative">
                   {/* Today line body */}
                   <div
-  className="absolute top-0 pointer-events-none"
-  style={{
-    left: timelineLeftX,
-    width: timelineW,
-    height: rowLayout.totalH,
-    zIndex: 430, // ✅ above group row (420), still below left panel (440+)
-    overflow: "hidden",
-  }}
-  aria-hidden
->
-  {showTodayLine && <TodayLine x={todayX} height="100%" zIndex={430} />}
-</div>
+          className="absolute top-0 pointer-events-none"
+          style={{
+            left: timelineLeftX,
+            width: timelineW,
+            height: rowLayout.totalH,
+            zIndex: 310, // ✅ above timeline bars, but BELOW sticky left table (z-320+)
+            overflow: "hidden",
+          }}
+          aria-hidden
+        >
+          <TodayLine x={todayX} height="100%" zIndex={310} />
+        </div>
 
 
                   {/* dependency layer base rect */}
