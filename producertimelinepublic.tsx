@@ -1499,6 +1499,7 @@ const rowH = rowHProp ?? 28;
     }}
   >
 
+             
              {/* ✅ Resize handles (Image 1 style) */}
 {onBeginResize && (
   <>
@@ -1585,6 +1586,7 @@ const rowH = rowHProp ?? 28;
     </button>
   </>
 )}
+
 
               </motion.div>
 
