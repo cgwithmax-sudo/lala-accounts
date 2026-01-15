@@ -1499,7 +1499,7 @@ const rowH = rowHProp ?? 28;
     }}
   >
 
-              {/* ✅ Resize handles stay on the bar edges */}
+             {/* ✅ Resize handles (Image 1 style) */}
 {onBeginResize && (
   <>
     {/* START handle */}
@@ -1507,24 +1507,17 @@ const rowH = rowHProp ?? 28;
       type="button"
       data-resize-handle
       className={cn(
-        // position: half outside the bar edge
         "absolute top-1/2 -translate-y-1/2 -translate-x-1/2",
-        // size + shape
-        "w-4 rounded-full",
-        // visual style (soft like Image 1)
-        "bg-[var(--bg)]/95 shadow-sm",
-        "ring-1 ring-[var(--border)]",
-        "hover:ring-2 hover:ring-foreground/25",
-        // show only on hover
+        // bigger hit area (but clean visuals)
+        "h-7 w-7",
         "opacity-0 group-hover:opacity-100",
-        // behavior
         "cursor-ew-resize",
-        "flex items-center justify-center",
-        "transition-[opacity,box-shadow] duration-150",
-        // match bar height
-        barHClass
+        "outline-none focus:outline-none",
+        "focus-visible:ring-2 focus-visible:ring-sky-400/40",
+        "transition-opacity duration-150",
+        "flex items-center justify-center"
       )}
-      style={{ left: 0, zIndex: 50 }}
+      style={{ left: 0, zIndex: 60 }}
       title="Drag to change start date"
       onPointerDown={(e) => {
         e.preventDefault();
@@ -1532,8 +1525,36 @@ const rowH = rowHProp ?? 28;
         onBeginResize(task.id, "start", e);
       }}
     >
+      {/* circle */}
+      <span className="absolute inset-0 rounded-full bg-[var(--bg)]/95 ring-1 ring-[var(--border)] shadow-sm" />
       {/* inner grip */}
-      <span className="h-4 w-1 rounded-full bg-[var(--text)]/25" />
+      <span className="relative h-4 w-1 rounded-full bg-[var(--text)]/25" />
+    </button>
+
+    {/* DUE handle */}
+    <button
+      type="button"
+      data-resize-handle
+      className={cn(
+        "absolute top-1/2 -translate-y-1/2 translate-x-1/2",
+        "h-7 w-7",
+        "opacity-0 group-hover:opacity-100",
+        "cursor-ew-resize",
+        "outline-none focus:outline-none",
+        "focus-visible:ring-2 focus-visible:ring-sky-400/40",
+        "transition-opacity duration-150",
+        "flex items-center justify-center"
+      )}
+      style={{ right: 0, zIndex: 60 }}
+      title="Drag to change due date"
+      onPointerDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onBeginResize(task.id, "due", e);
+      }}
+    >
+      <span className="absolute inset-0 rounded-full bg-[var(--bg)]/95 ring-1 ring-[var(--border)] shadow-sm" />
+      <span className="relative h-4 w-1 rounded-full bg-[var(--text)]/25" />
     </button>
 
     {/* DUE handle */}
