@@ -681,34 +681,39 @@ function safeLoadDraft(): { groups: Group[]; tasks: Task[] } {
 
 // AFTER
 function safeLoadVersions(): TimelineVersion[] {
+  // Loads published versions from localStorage.
+  // Includes migration for older shapes that used `createdAt` and/or `dependsOn` as string/null.
   try {
-    const raw = localStorage.getItem(STORAGE_VERSIONS_KEY);
+    if (typeof window === "undefined") return [];
+    const raw = window.localStorage.getItem(VERSIONS_KEY);
     if (!raw) return [];
+
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
 
     return parsed
-      .filter((v) => v && typeof v.id === "string" && typeof v.label === "string")
+      .filter((v) => v && typeof (v as any).id === "string")
       .map((v): TimelineVersion => {
+        const anyV: any = v;
+
         const publishedAt =
-          typeof v.publishedAt === "number"
-            ? v.publishedAt
-            : typeof v.publishedAt === "number"
-              ? v.publishedAt
+          typeof anyV.publishedAt === "number"
+            ? anyV.publishedAt
+            : typeof anyV.createdAt === "number"
+              ? anyV.createdAt
               : Date.now();
 
-        const autoRows = typeof v.autoRows === "boolean" ? v.autoRows : true;
+        const autoRows = typeof anyV.autoRows === "boolean" ? anyV.autoRows : true;
 
         return {
-          id: v.id,
-          label: v.label,
+          id: String(anyV.id),
+          label: typeof anyV.label === "string" && anyV.label.trim() ? anyV.label : "Published",
           publishedAt,
           autoRows,
-          groups: Array.isArray(v.groups) ? v.groups : [],
-          tasks: Array.isArray(v.tasks) ? v.tasks : [],
+          groups: Array.isArray(anyV.groups) ? anyV.groups : [],
+          tasks: Array.isArray(anyV.tasks) ? normalizeDependsOnArray(anyV.tasks) : [],
         };
-      })
-      .filter((v) => typeof v.publishedAt === "number");
+      });
   } catch {
     return [];
   }
@@ -2409,6 +2414,19 @@ function handleTaskNameKeyDown(
   }, []);
 
   const [versions, setVersions] = useState<TimelineVersion[]>([]);
+
+  // Minimal toast helper (keeps TS happy even if no toaster lib is wired)
+  const toast = (title: string, description?: string) => {
+    // Replace with your preferred toaster later (sonner / shadcn toast).
+    // For now we log to console so builds don't fail.
+    // eslint-disable-next-line no-console
+    console.log(`[toast] ${title}`, description ?? "");
+  };
+
+  const safeSaveVersions = (next: TimelineVersion[]) => {
+    setVersions(next);
+    saveVersionsToStorage(next);
+  };
   const [hydrated, setHydrated] = useState(false);
 
   // ✅ ADD THIS: keeps dependency cycle checks using the latest tasks
@@ -3516,32 +3534,32 @@ const t: Task = {
         };
       });
 
-// AFTER (inside addGroup)
-const chained = newTasks.map((t, i) => (i === 0 ? { ...t, dependsOn: null } : { ...t, dependsOn: [newTasks[i - 1].id] }));
+      const chained: Task[] = newTasks.map((t, i) =>
+        i === 0 ? { ...t, dependsOn: null } : { ...t, dependsOn: [newTasks[i - 1].id] }
+      );
+
       return enforceFinishToStartDependencies([...prev, ...chained]);
     });
   }
 
   function publishVersion() {
-  const label = (nextPublishLabel || "").trim() || `Version ${versions.length + 1}`;
+    const label = (nextPublish || "").trim() || `Version ${versions.length + 1}`;
 
-  const newV: TimelineVersion = {
-    id: `${Date.now()}_${Math.random().toString(16).slice(2)}`,
-    label,
-    publishedAt: Date.now(),
-    autoRows: !!autoRows,
-    groups: structuredClone(groups),
-    tasks: structuredClone(tasks),
-  };
+    const newV: TimelineVersion = {
+      id: `${Date.now()}_${Math.random().toString(16).slice(2)}`,
+      label,
+      publishedAt: Date.now(),
+      autoRows: !!autoRows,
+      groups: structuredClone(groups),
+      tasks: structuredClone(tasks),
+    };
 
-  const merged = [newV, ...versions].slice(0, 30);
-  setVersions(merged);
-  safeSaveVersions(merged);
-  setActiveVersionId(newV.id);
+    const merged = [newV, ...versions].slice(0, 30);
+    safeSaveVersions(merged);
+    setActiveVersionId(newV.id);
 
-  toast("Published", "This version is saved in localStorage and can be loaded anytime.");
-  setPublishOpen(false);
-}
+    toast("Published", "This version is saved in localStorage and can be loaded anytime.");
+  }
 
 
   function loadVersionToEditor(v: TimelineVersion) {
