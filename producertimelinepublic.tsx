@@ -1499,45 +1499,72 @@ const rowH = rowHProp ?? 28;
     }}
   >
 
-                {/* ✅ Resize handles stay on the bar edges */}
-                {onBeginResize && (
-                  <>
-                    <button
-                      type="button"
-                      data-resize-handle
-                      className={cn(
-                        "absolute top-1/2 -translate-y-1/2 w-3 rounded-full border bg-[var(--bg)]/70 shadow-sm",
-                        barHClass,
-                        "opacity-0 group-hover:opacity-100",
-                        "cursor-ew-resize"
-                      )}
-                      style={{ left: 0, zIndex: 30 }}
-                      title="Drag to change start date"
-                      onPointerDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        onBeginResize(task.id, "start", e);
-                      }}
-                    />
-                    <button
-                      type="button"
-                      data-resize-handle
-                      className={cn(
-                        "absolute top-1/2 -translate-y-1/2 w-3 rounded-full border bg-[var(--bg)]/70 shadow-sm",
-                        barHClass,
-                        "opacity-0 group-hover:opacity-100",
-                        "cursor-ew-resize"
-                      )}
-                      style={{ right: 0, zIndex: 30 }}
-                      title="Drag to change due date"
-                      onPointerDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        onBeginResize(task.id, "due", e);
-                      }}
-                    />
-                  </>
-                )}
+              {/* ✅ Resize handles stay on the bar edges */}
+{onBeginResize && (
+  <>
+    {/* START handle */}
+    <button
+      type="button"
+      data-resize-handle
+      className={cn(
+        // position: half outside the bar edge
+        "absolute top-1/2 -translate-y-1/2 -translate-x-1/2",
+        // size + shape
+        "w-4 rounded-full",
+        // visual style (soft like Image 1)
+        "bg-[var(--bg)]/95 shadow-sm",
+        "ring-1 ring-[var(--border)]",
+        "hover:ring-2 hover:ring-foreground/25",
+        // show only on hover
+        "opacity-0 group-hover:opacity-100",
+        // behavior
+        "cursor-ew-resize",
+        "flex items-center justify-center",
+        "transition-[opacity,box-shadow] duration-150",
+        // match bar height
+        barHClass
+      )}
+      style={{ left: 0, zIndex: 50 }}
+      title="Drag to change start date"
+      onPointerDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onBeginResize(task.id, "start", e);
+      }}
+    >
+      {/* inner grip */}
+      <span className="h-4 w-1 rounded-full bg-[var(--text)]/25" />
+    </button>
+
+    {/* DUE handle */}
+    <button
+      type="button"
+      data-resize-handle
+      className={cn(
+        "absolute top-1/2 -translate-y-1/2 translate-x-1/2",
+        "w-4 rounded-full",
+        "bg-[var(--bg)]/95 shadow-sm",
+        "ring-1 ring-[var(--border)]",
+        "hover:ring-2 hover:ring-foreground/25",
+        "opacity-0 group-hover:opacity-100",
+        "cursor-ew-resize",
+        "flex items-center justify-center",
+        "transition-[opacity,box-shadow] duration-150",
+        barHClass
+      )}
+      style={{ right: 0, zIndex: 50 }}
+      title="Drag to change due date"
+      onPointerDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onBeginResize(task.id, "due", e);
+      }}
+    >
+      <span className="h-4 w-1 rounded-full bg-[var(--text)]/25" />
+    </button>
+  </>
+)}
+
               </motion.div>
 
               {/* ✅ ONE dependency dot (LEFT) */}
