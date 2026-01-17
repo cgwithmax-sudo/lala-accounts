@@ -361,7 +361,7 @@ const DOT_RADIUS = 6;
 // - negative inset means:
 //   end dot center = barRight + 10px
 //   start dot center = barLeft  - 10px
-const DOT_CENTER_INSET = -10;
+const DOT_CENTER_INSET = -15;
 
 // Dot button sizing / offset (h-3 w-3 = 12px, radius 6)
 // Center offset 10px outside + 6px half-size = 16px total
