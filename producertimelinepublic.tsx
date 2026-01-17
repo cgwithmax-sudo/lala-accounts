@@ -1452,9 +1452,13 @@ const rowH = rowHProp ?? 28;
 
       {(() => {
         // ✅ Expand hover area to include: [LEFT dot] + gap + bar
-        const hoverLeft = barLeft - DEP_DOT_OFFSET;
-        const hoverW = barW + DEP_DOT_OFFSET; // ✅ removed right side padding
-        const barHClass = rowH <= 44 ? "h-5" : "h-6";
+const hoverLeft = barLeft - DEP_DOT_OFFSET;
+const hoverW = barW + DEP_DOT_OFFSET; // ✅ removed right side padding
+const barHClass = rowH <= 44 ? "h-5" : "h-6";
+
+// ✅ If bar is very short (eg 1-day), handles must not cover the bar
+const isTinyBar = barW <= 36;
+
 
         return (
           <div
@@ -1500,7 +1504,7 @@ const rowH = rowHProp ?? 28;
   >
 
              
-             {/* ✅ Resize handles (Image 1 style) */}
+          {/* ✅ Resize handles (fixed: do NOT block selecting 1-day bars) */}
 {onBeginResize && (
   <>
     {/* START handle */}
@@ -1508,15 +1512,25 @@ const rowH = rowHProp ?? 28;
       type="button"
       data-resize-handle
       className={cn(
-        "absolute top-1/2 -translate-y-1/2 -translate-x-1/2",
-        // bigger hit area (but clean visuals)
-        "h-7 w-7",
+        "absolute top-1/2 -translate-y-1/2",
+        // ✅ For tiny bars, push handle OUTSIDE so it doesn't cover the bar
+        isTinyBar ? "-translate-x-full" : "-translate-x-1/2",
+        // ✅ 50% thinner
+isTinyBar ? "w-[6px]" : "w-2",
+        "rounded-full",
+        // ✅ Solid (less transparent) so it matches the intended look
+        "bg-[var(--bg)] shadow-sm",
+        "ring-1 ring-[var(--border)]",
+        "hover:ring-2 hover:ring-foreground/25",
+        // ✅ Critical fix: hidden handles MUST NOT capture clicks
         "opacity-0 group-hover:opacity-100",
+        "pointer-events-none group-hover:pointer-events-auto",
         "cursor-ew-resize",
         "outline-none focus:outline-none",
         "focus-visible:ring-2 focus-visible:ring-sky-400/40",
-        "transition-opacity duration-150",
-        "flex items-center justify-center"
+        "flex items-center justify-center",
+        "transition-[opacity,box-shadow] duration-150",
+        barHClass
       )}
       style={{ left: 0, zIndex: 60 }}
       title="Drag to change start date"
@@ -1526,10 +1540,7 @@ const rowH = rowHProp ?? 28;
         onBeginResize(task.id, "start", e);
       }}
     >
-      {/* circle */}
-      <span className="absolute inset-0 rounded-full bg-[var(--bg)]/95 ring-1 ring-[var(--border)] shadow-sm" />
-      {/* inner grip */}
-      <span className="relative h-4 w-1 rounded-full bg-[var(--text)]/25" />
+      <span className="h-4 w-1 rounded-full bg-[var(--text)]/25" />
     </button>
 
     {/* DUE handle */}
@@ -1537,44 +1548,27 @@ const rowH = rowHProp ?? 28;
       type="button"
       data-resize-handle
       className={cn(
-        "absolute top-1/2 -translate-y-1/2 translate-x-1/2",
-        "h-7 w-7",
+        "absolute top-1/2 -translate-y-1/2",
+        // ✅ For tiny bars, push handle OUTSIDE so it doesn't cover the bar
+        isTinyBar ? "translate-x-full" : "translate-x-1/2",
+// ✅ 50% thinner
+isTinyBar ? "w-[6px]" : "w-2",
+        "rounded-full",
+        // ✅ Solid (less transparent) so it matches the intended look
+        "bg-[var(--bg)] shadow-sm",
+        "ring-1 ring-[var(--border)]",
+        "hover:ring-2 hover:ring-foreground/25",
+        // ✅ Critical fix: hidden handles MUST NOT capture clicks
         "opacity-0 group-hover:opacity-100",
+        "pointer-events-none group-hover:pointer-events-auto",
         "cursor-ew-resize",
         "outline-none focus:outline-none",
         "focus-visible:ring-2 focus-visible:ring-sky-400/40",
-        "transition-opacity duration-150",
-        "flex items-center justify-center"
-      )}
-      style={{ right: 0, zIndex: 60 }}
-      title="Drag to change due date"
-      onPointerDown={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        onBeginResize(task.id, "due", e);
-      }}
-    >
-      <span className="absolute inset-0 rounded-full bg-[var(--bg)]/95 ring-1 ring-[var(--border)] shadow-sm" />
-      <span className="relative h-4 w-1 rounded-full bg-[var(--text)]/25" />
-    </button>
-
-    {/* DUE handle */}
-    <button
-      type="button"
-      data-resize-handle
-      className={cn(
-        "absolute top-1/2 -translate-y-1/2 translate-x-1/2",
-        "w-4 rounded-full",
-        "bg-[var(--bg)]/95 shadow-sm",
-        "ring-1 ring-[var(--border)]",
-        "hover:ring-2 hover:ring-foreground/25",
-        "opacity-0 group-hover:opacity-100",
-        "cursor-ew-resize",
         "flex items-center justify-center",
         "transition-[opacity,box-shadow] duration-150",
         barHClass
       )}
-      style={{ right: 0, zIndex: 50 }}
+      style={{ right: 0, zIndex: 60 }}
       title="Drag to change due date"
       onPointerDown={(e) => {
         e.preventDefault();
@@ -1588,30 +1582,35 @@ const rowH = rowHProp ?? 28;
 )}
 
 
+
               </motion.div>
 
-              {/* ✅ ONE dependency dot (LEFT) */}
-              {showDepDots && (
-                <button
-                  type="button"
-                  data-dep-role="start"
-                  className={cn(
-                    "absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full border shadow-sm",
-                    "opacity-0 group-hover:opacity-100",
-                    highlight && "ring-2 ring-foreground/40",
-                    "cursor-crosshair",
-                    depsToArray((task as any).dependsOn).length ? "bg-violet-50 border-violet-200" : "bg-[var(--bg)] border-[var(--border)]"
-                  )}
-                  style={{ left: 0, zIndex: 40 }}
-                  title={depsToArray((task as any).dependsOn).length ? "Drag to change/remove dependency" : "Drag to set dependency"}
-                  onPointerDown={(e) => {
-                    if (!onBeginEdit) return;
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onBeginEdit(task.id, e);
-                  }}
-                />
-              )}
+             {/* ✅ ONE dependency dot (LEFT) */}
+{showDepDots && (
+  <button
+    type="button"
+    data-dep-role="start"
+    className={cn(
+      "absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full border shadow-sm",
+      "opacity-0 group-hover:opacity-100",
+      highlight && "ring-2 ring-foreground/40",
+      "cursor-crosshair",
+      depsToArray((task as any).dependsOn).length ? "bg-violet-50 border-violet-200" : "bg-[var(--bg)] border-[var(--border)]"
+    )}
+    style={{ left: -5, zIndex: 40 }}
+    title={depsToArray((task as any).dependsOn).length ? "Drag to change/remove dependency" : "Drag to set dependency"}
+    onPointerDown={(e) => {
+      if (!onBeginEdit) return;
+      e.preventDefault();
+      e.stopPropagation();
+      onBeginEdit(task.id, e);
+    }}
+  />
+)}
+
+
+
+              
             </div>
           </div>
         );
