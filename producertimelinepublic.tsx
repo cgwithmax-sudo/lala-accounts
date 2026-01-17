@@ -3834,32 +3834,49 @@ useEffect(() => {
     setLinkHoverToId(candSuccId);
   };
 
-  const onUp = (ev: PointerEvent) => {
-    const predecessorId = linkFromId;
+const onUp = (ev: PointerEvent) => {
+  const predecessorId = linkFromId;
 
-    // ✅ Determine what we're actually releasing on (SUCCESSOR bar)
-    const el = document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement | null;
-    const barEl = el?.closest?.("[data-task-bar]") as HTMLElement | null;
-    const dropSuccId = barEl?.dataset?.taskBar ?? null;
+  // ✅ Determine what we're actually releasing on (SUCCESSOR bar)
+  const el = document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement | null;
+  const barEl = el?.closest?.("[data-task-bar]") as HTMLElement | null;
+  const dropSuccId = barEl?.dataset?.taskBar ?? null;
 
-    if (
-      predecessorId &&
-      dropSuccId &&
-      dropSuccId !== predecessorId &&
-      !wouldCreateCycle(predecessorId, dropSuccId)
-    ) {
-      // ✅ Finish-to-Start: SUCCESSOR depends on PREDECESSOR
-      const successorTask = tasksRef.current.find((t) => t.id === dropSuccId);
-      const cur = depsToArray((successorTask as any)?.dependsOn);
-      const next = Array.from(new Set([...cur, predecessorId]));
-      patchTask(dropSuccId, { dependsOn: next.length ? next : null });
+  // ✅ If user drops on empty space, allow "drag out to remove dependency"
+  // Only remove when the task you're dragging FROM already has a dependency set.
+  if (!dropSuccId && predecessorId) {
+    const fromTask = tasksRef.current.find((t) => t.id === predecessorId);
+    const fromDeps = depsToArray((fromTask as any)?.dependsOn);
+
+    if (fromDeps.length > 0) {
+      // Remove all dependencies for this task
+      patchTask(predecessorId, { dependsOn: null });
     }
 
-    // Dropped on empty space → just cancel (no changes)
     setLinkFromId(null);
     setLinkCursor(null);
     setLinkHoverToId(null);
-  };
+    return;
+  }
+
+  if (
+    predecessorId &&
+    dropSuccId &&
+    dropSuccId !== predecessorId &&
+    !wouldCreateCycle(predecessorId, dropSuccId)
+  ) {
+    // ✅ Finish-to-Start: SUCCESSOR depends on PREDECESSOR
+    const successorTask = tasksRef.current.find((t) => t.id === dropSuccId);
+    const cur = depsToArray((successorTask as any)?.dependsOn);
+    const next = Array.from(new Set([...cur, predecessorId]));
+    patchTask(dropSuccId, { dependsOn: next.length ? next : null });
+  }
+
+  setLinkFromId(null);
+  setLinkCursor(null);
+  setLinkHoverToId(null);
+};
+
 
   window.addEventListener("pointermove", onMove, { passive: false });
   window.addEventListener("pointerup", onUp);
