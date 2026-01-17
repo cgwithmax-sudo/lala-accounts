@@ -4009,31 +4009,58 @@ useEffect(() => {
   const yMid = rowLayout.taskY.get(linkFromId);
   if (typeof yMid !== "number") return null;
 
-  const startY = clamp(yMid, 0, rowLayout.totalH);
-  const endY = clamp(linkCursor.y, 0, rowLayout.totalH);
+  // Fallback start (math-based)
+  let startY = clamp(yMid, 0, rowLayout.totalH);
 
-  // ---- FROM bar geometry (match TaskBar) ----
-  const fromStartIdx = clamp(dayIndex(timelineStart, toDate(from.start)), 0, days.length - 1);
+  const fromStartIdx = clamp(
+    dayIndex(timelineStart, toDate(from.start)),
+    0,
+    days.length - 1
+  );
   const fromBarLeft = fromStartIdx * cellW + BAR_PAD;
+  let startX = clamp(fromBarLeft + DOT_CENTER_INSET, 0, timelineW);
 
-  // ✅ Start from the LEFT dependency dot center (dot is outside the bar)
-  // DOT_CENTER_INSET is already -10 in your file, which matches your dot placement.
-  const startX = clamp(fromBarLeft + DOT_CENTER_INSET, 0, timelineW);
+  // ✅ Override startX/startY using the *actual DOM center* of the white circle
+  // so the black dot + preview line always starts exactly where the circle is.
+  if (typeof window !== "undefined") {
+    const depRect = depLayerRef.current?.getBoundingClientRect();
+    const scope = depLayerRef.current?.parentElement ?? undefined;
+
+    const dotEl = (scope?.querySelector(
+      `[data-task-bar="${linkFromId}"] [data-dep-role="${linkFromDot}"]`
+    ) ?? null) as HTMLElement | null;
+
+    if (depRect && dotEl) {
+      const r = dotEl.getBoundingClientRect();
+      const domX = r.left + r.width / 2 - depRect.left;
+      const domY = r.top + r.height / 2 - depRect.top;
+
+      if (Number.isFinite(domX)) startX = clamp(domX, 0, timelineW);
+      if (Number.isFinite(domY)) startY = clamp(domY, 0, rowLayout.totalH);
+    }
+  }
 
   const endX = clamp(linkCursor.x, 0, timelineW);
+  const endY = clamp(linkCursor.y, 0, rowLayout.totalH);
 
-  // ✅ Route DOWN (or UP) first, then across — so it "comes out downward" immediately
-  const laneY = clamp(
-    endY >= startY ? startY + TASK_ROW_H / 2 - 4 : startY - TASK_ROW_H / 2 + 4,
-    0,
-    rowLayout.totalH
-  );
+  const dx = endX - startX;
 
-  const d = `M ${startX} ${startY} V ${laneY} H ${endX} V ${endY}`;
+  // make it look nicer with a little “standoff” and a gentle curve
+  const standoff = 16;
+  const sx = startX + standoff;
+  const ex = endX - standoff;
 
-  return { active: true, d, fromX: startX, fromY: startY, toX: endX, toY: endY };
+  const c1x = sx + Math.max(40, Math.abs(dx) * 0.25);
+  const c1y = startY;
+  const c2x = ex - Math.max(40, Math.abs(dx) * 0.25);
+  const c2y = endY;
+
+  const d = `M ${startX} ${startY} L ${sx} ${startY} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${ex} ${endY} L ${endX} ${endY}`;
+
+  return { d, startX, startY, endX, endY };
 }, [
   linkFromId,
+  linkFromDot,
   linkCursor,
   tasks,
   rowLayout.taskY,
@@ -4042,8 +4069,11 @@ useEffect(() => {
   days.length,
   cellW,
   timelineW,
+  BAR_PAD,
+  DOT_CENTER_INSET,
   TASK_ROW_H,
 ]);
+
 
 
 
