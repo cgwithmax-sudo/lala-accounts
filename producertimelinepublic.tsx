@@ -3816,48 +3816,46 @@ useEffect(() => {
 
     const el = document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement | null;
 
-    // ✅ Drop target is the BAR itself (this becomes the PREDECESSOR)
+    // ✅ Drop target is the BAR itself (this becomes the SUCCESSOR)
     const barEl = el?.closest?.("[data-task-bar]") as HTMLElement | null;
-    const candPredId = barEl?.dataset?.taskBar ?? null;
+    const candSuccId = barEl?.dataset?.taskBar ?? null;
 
-    if (!candPredId || candPredId === linkFromId) {
+    if (!candSuccId || candSuccId === linkFromId) {
       setLinkHoverToId(null);
       return;
     }
 
-    // ✅ new edge would be: candPredId -> linkFromId
-    if (wouldCreateCycle(candPredId, linkFromId)) {
+    // ✅ new edge would be: linkFromId (PREDECESSOR) -> candSuccId (SUCCESSOR)
+    if (wouldCreateCycle(linkFromId, candSuccId)) {
       setLinkHoverToId(null);
       return;
     }
 
-    setLinkHoverToId(candPredId);
+    setLinkHoverToId(candSuccId);
   };
 
   const onUp = (ev: PointerEvent) => {
-    const successorId = linkFromId;
+    const predecessorId = linkFromId;
 
-    // ✅ Determine what we're actually releasing on (PREDECESSOR bar)
+    // ✅ Determine what we're actually releasing on (SUCCESSOR bar)
     const el = document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement | null;
     const barEl = el?.closest?.("[data-task-bar]") as HTMLElement | null;
-    const dropPredId = barEl?.dataset?.taskBar ?? null;
+    const dropSuccId = barEl?.dataset?.taskBar ?? null;
 
     if (
-      successorId &&
-      dropPredId &&
-      dropPredId !== successorId &&
-      !wouldCreateCycle(dropPredId, successorId)
+      predecessorId &&
+      dropSuccId &&
+      dropSuccId !== predecessorId &&
+      !wouldCreateCycle(predecessorId, dropSuccId)
     ) {
       // ✅ Finish-to-Start: SUCCESSOR depends on PREDECESSOR
-      const successorTask = tasksRef.current.find((t) => t.id === successorId);
+      const successorTask = tasksRef.current.find((t) => t.id === dropSuccId);
       const cur = depsToArray((successorTask as any)?.dependsOn);
-      const next = Array.from(new Set([...cur, dropPredId]));
-      patchTask(successorId, { dependsOn: next.length ? next : null });
-    } else if (successorId && !dropPredId) {
-      // ✅ Dropped on empty space → clear this task’s dependencies
-      patchTask(successorId, { dependsOn: null });
+      const next = Array.from(new Set([...cur, predecessorId]));
+      patchTask(dropSuccId, { dependsOn: next.length ? next : null });
     }
 
+    // Dropped on empty space → just cancel (no changes)
     setLinkFromId(null);
     setLinkCursor(null);
     setLinkHoverToId(null);
@@ -3871,6 +3869,7 @@ useEffect(() => {
     window.removeEventListener("pointerup", onUp as any);
   };
 }, [linkFromId]);
+
 
 
 
